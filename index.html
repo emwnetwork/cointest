@@ -24,12 +24,21 @@
     .help{margin-top:10px;color:var(--muted);font-size:13px}
     .tg-cta{margin-top:12px}
     .tg-cta a{display:inline-block;padding:10px 14px;border-radius:12px;border:1px solid #333;color:var(--text);text-decoration:none}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .score-badge{padding:6px 10px;border-radius:12px;border:1px solid #333;background:var(--card);font-weight:600}
+    .score-badge #scoreValue{font-variant-numeric:tabular-nums}
+    .emblem-wrap{display:grid;place-items:center;min-height:40vh}
+    .emblem{width:160px;aspect-ratio:1/1;border-radius:50%;display:grid;place-items:center;cursor:pointer;background:radial-gradient(60% 60% at 30% 30%, #ffd66b, #f39c12 70%, #b37400 100%);box-shadow:0 10px 30px rgba(0,0,0,.45), inset 0 2px 6px rgba(255,255,255,.3), inset 0 -4px 8px rgba(0,0,0,.25);transition:transform .08s ease}
+    .emblem:active{transform:scale(.96)}
+    .emblem svg{width:60%;height:60%;opacity:.9}
+    .emblem.pop{animation:pop .18s ease-out}
+    @keyframes pop{0%{transform:scale(1)}50%{transform:scale(1.06)}100%{transform:scale(1)}}
   </style>
 </head>
 <body>
   <header class="header">
     <div class="container">
-      <h1>Mini App — 5 Boş Ekran</h1>
+      <div class="topbar"><h1>Mini App — 5 Boş Ekran</h1><div class="score-badge" aria-live="polite">Puan: <span id="scoreValue">0</span></div></div>
       <div class="nav" role="tablist" aria-label="Ekranlar">
         <button data-screen="1" class="active" aria-selected="true">Ekran 1</button>
         <button data-screen="2">Ekran 2</button>
@@ -43,7 +52,15 @@
   <main class="container main">
     <section id="screen-1" class="screen" aria-labelledby="tab-1"><h2>Boş Ekran 1</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
     <section id="screen-2" class="screen"><h2>Boş Ekran 2</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
-    <section id="screen-3" class="screen"><h2>Boş Ekran 3</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
+    <section id="screen-3" class="screen">
+      <h2>Boş Ekran 3</h2>
+      <div class="emblem-wrap">
+        <button id="tapEmblem" class="emblem" aria-label="Puan kazan">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.9 6.6 7.1.6-5.3 4.6 1.7 6.8L12 17.8 5.6 20.6l1.7-6.8-5.3-4.6 7.1-.6L12 2z"/></svg>
+        </button>
+      </div>
+      <p class="help" style="text-align:center">Ambleme tıkla, her tıklamada +1 puan.</p>
+    </section>
     <section id="screen-4" class="screen"><h2>Boş Ekran 4</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
     <section id="screen-5" class="screen"><h2>Boş Ekran 5</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
 
@@ -57,6 +74,15 @@
 (function(){
   const BOT_USERNAME = "YOUR_BOT_USERNAME"; // değiştir
   const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+
+  // --- Score state ---
+  const SCORE_KEY = 'tap_score_v1';
+  let score = 0;
+  function loadScore(){
+    try{ const s = localStorage.getItem(SCORE_KEY); score = s? parseInt(s,10) : 0; if(Number.isNaN(score)) score=0; }catch(e){ score = 0; }
+  }
+  function saveScore(){ try{ localStorage.setItem(SCORE_KEY, String(score)); }catch(e){} }
+  function renderScore(){ const el = document.getElementById('scoreValue'); if(el) el.textContent = String(score); }
 
   function applyTelegramTheme(){
     if(!tg || !tg.themeParams) return;
@@ -133,6 +159,17 @@
   });
 
   // Boot
+  loadScore();
+  renderScore();
+  const emblem = document.getElementById('tapEmblem');
+  if (emblem){
+    emblem.addEventListener('click', ()=>{
+      score += 1;
+      saveScore();
+      renderScore();
+      emblem.classList.remove('pop'); void emblem.offsetWidth; emblem.classList.add('pop');
+    });
+  }
   show(resolveInitialScreen());
 })();
 </script>
