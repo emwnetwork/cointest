@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mini App — 5 Boş Ekran</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{
+      --bg:#0a0a0a; --text:#ffffff; --muted:#cbd5e1; --card:#111111; --accent:#3390ec;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system, Segoe UI, Roboto, Arial, sans-serif;line-height:1.4}
+    .header{position:sticky;top:0;z-index:10;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);border-bottom:1px solid #222}
+    .container{max-width:900px;margin:0 auto;padding:12px 16px}
+    h1{font-size:20px;margin:0 0 8px}
+    .nav{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+    .nav button{padding:10px;border-radius:14px;border:1px solid #333;background:var(--card);color:var(--text);cursor:pointer}
+    .nav button.active{outline:2px solid var(--accent)}
+    .main{padding:16px}
+    .screen{display:none;min-height:40vh;border:1px dashed #333;border-radius:16px;padding:24px;background:var(--card)}
+    .screen h2{margin:0 0 6px;font-size:18px;font-weight:600}
+    .help{margin-top:10px;color:var(--muted);font-size:13px}
+    .tg-cta{margin-top:12px}
+    .tg-cta a{display:inline-block;padding:10px 14px;border-radius:12px;border:1px solid #333;color:var(--text);text-decoration:none}
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="container">
+      <h1>Mini App — 5 Boş Ekran</h1>
+      <div class="nav" role="tablist" aria-label="Ekranlar">
+        <button data-screen="1" class="active" aria-selected="true">Ekran 1</button>
+        <button data-screen="2">Ekran 2</button>
+        <button data-screen="3">Ekran 3</button>
+        <button data-screen="4">Ekran 4</button>
+        <button data-screen="5">Ekran 5</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main">
+    <section id="screen-1" class="screen" aria-labelledby="tab-1"><h2>Boş Ekran 1</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
+    <section id="screen-2" class="screen"><h2>Boş Ekran 2</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
+    <section id="screen-3" class="screen"><h2>Boş Ekran 3</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
+    <section id="screen-4" class="screen"><h2>Boş Ekran 4</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
+    <section id="screen-5" class="screen"><h2>Boş Ekran 5</h2><p class="help">Buraya içerik ekleyebilirsin.</p></section>
+
+    <div id="not-in-tg" class="tg-cta" hidden>
+      <div class="help">Telegram dışındasın. Bu sayfayı Telegram Mini App olarak açmak için bot linkini kullan.</div>
+      <p class="help"><strong>Örnek:</strong> <code>t.me/YOUR_BOT_USERNAME?startapp=2</code></p>
+    </div>
+  </main>
+
+<script>
+(function(){
+  const BOT_USERNAME = "YOUR_BOT_USERNAME"; // değiştir
+  const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+
+  function applyTelegramTheme(){
+    if(!tg || !tg.themeParams) return;
+    const p = tg.themeParams;
+    const vars = {
+      '--bg': p.bg_color || '#0a0a0a',
+      '--text': p.text_color || '#ffffff',
+      '--muted': p.hint_color || '#b0b6bf',
+      '--card': p.secondary_bg_color || '#111111',
+      '--accent': p.button_color || '#3390ec'
+    };
+    for (const k in vars) document.documentElement.style.setProperty(k, vars[k]);
+    document.body.style.background = vars['--bg'];
+  }
+
+  function setHash(screen){ location.hash = "#/"+screen; }
+
+  function show(screen){
+    document.querySelectorAll('.screen').forEach(el=>el.style.display='none');
+    document.getElementById('screen-'+screen).style.display='block';
+    document.querySelectorAll('.nav button').forEach(b=>{
+      const active = b.dataset.screen===String(screen);
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-selected', active);
+    });
+    if(tg && tg.BackButton){
+      if(screen!=='1'){ tg.BackButton.show(); tg.BackButton.onClick(()=>{ show('1'); setHash('1'); }); }
+      else { tg.BackButton.hide(); }
+    }
+  }
+
+  function getStartParam(){
+    const url = new URL(location.href);
+    return (url.searchParams.get('tgWebAppStartParam') ||
+            url.searchParams.get('startapp') ||
+            (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) ||
+            null);
+  }
+
+  function resolveInitialScreen(){
+    const sp = getStartParam();
+    const h = location.hash.replace('#/','');
+    if(['1','2','3','4','5'].includes(sp)) return sp;
+    if(['1','2','3','4','5'].includes(h)) return h;
+    return '1';
+  }
+
+  // Events
+  document.querySelectorAll('.nav button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      const s = btn.dataset.screen;
+      show(s); setHash(s);
+    });
+  });
+
+  // Telegram init
+  if(tg){
+    tg.ready();
+    tg.expand();
+    applyTelegramTheme();
+  } else {
+    // show CTA when outside Telegram
+    document.getElementById('not-in-tg').hidden = false;
+    const p = document.getElementById('not-in-tg').querySelector('p.help code');
+    if (p && BOT_USERNAME !== "YOUR_BOT_USERNAME") {
+      p.textContent = `t.me/${BOT_USERNAME}?startapp=1`;
+    }
+  }
+
+  // Router
+  window.addEventListener('hashchange', ()=>{
+    const h = location.hash.replace('#/','') || '1';
+    if(['1','2','3','4','5'].includes(h)) show(h);
+  });
+
+  // Boot
+  show(resolveInitialScreen());
+})();
+</script>
+<!--
+Yayınlama:
+1) Bu dosyayı repo'ya koy: index.html
+2) GitHub Pages'ı aç: Settings → Pages → Source: GitHub Actions veya main /root.
+3) Bot linkinden aç: t.me/YOUR_BOT_USERNAME?startapp=3 (örnek)
+
+İpucu: Her ekran tamamen boş; istediğin HTML/JS'yi ilgili <section> içine ekle.
+-->
+</body>
+</html>
